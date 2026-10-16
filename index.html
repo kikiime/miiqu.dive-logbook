@@ -32,7 +32,7 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-slate-700 pb-6">
       <div>
         <h1 class="text-3xl font-bold tracking-tight text-cyan-400">ProDive Logbook</h1>
-        <p class="text-slate-400 text-sm mt-1">Professional & Technical Scuba Diving Archive</p>
+        <p class="text-slate-400 text-sm mt-1">Professional & Technical Diving Archive</p>
       </div>
       <div class="flex items-center gap-4 mt-4 md:mt-0">
         <button onclick="window.print()" class="print:hidden bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/50 px-4 py-2 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2 shadow-sm">
@@ -69,9 +69,24 @@
             <label class="block text-xs font-medium text-slate-300 mb-1">Dive Number</label>
             <input type="number" id="dive_number" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
           </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Date</label>
+              <input type="date" id="dive_date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Hour / Time</label>
+              <input type="time" id="dive_time" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+          </div>
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Date</label>
-            <input type="date" id="dive_date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            <label class="block text-xs font-medium text-slate-300 mb-1">Diving System</label>
+            <select id="diving_system" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              <option value="SCUBA">SCUBA (Self-Contained Underwater Breathing Apparatus)</option>
+              <option value="Surface-Supplied Diving (SSD)">Surface-Supplied Diving (SSD)</option>
+              <option value="Open bell">Open bell</option>
+              <option value="Closed bell">Closed bell</option>
+            </select>
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1">Location</label>
@@ -94,6 +109,10 @@
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1">Supervisor / Buddy</label>
             <input type="text" id="supervisor" placeholder="Name or Sign-off" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Immersion Profile (Image)</label>
+            <input type="file" id="profile_image" accept="image/*" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-cyan-950 file:text-cyan-400 hover:file:bg-cyan-900">
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1">Dive Notes</label>
@@ -130,8 +149,8 @@
     }
 
     let localDives = [
-      { id: 1, dive_number: 1, dive_date: '2026-06-01', location: 'Coral Gardens', max_depth: 18.5, bottom_time: 45, gas_mix: 'Air', supervisor: 'Instructor Mark', notes: 'Calm water, great visibility.' },
-      { id: 2, dive_number: 2, dive_date: '2026-06-03', location: 'Wreck of the Umbria', max_depth: 28.0, bottom_time: 38, gas_mix: 'EAN32', supervisor: 'Captain Sarah', notes: 'Penetrated cargo hold #2.' }
+      { id: 1, dive_number: 1, dive_date: '2026-06-01', dive_time: '10:30', diving_system: 'SCUBA', location: 'Coral Gardens', max_depth: 18.5, bottom_time: 45, gas_mix: 'Air', supervisor: 'Instructor Mark', profile_image: '', notes: 'Calm water, great visibility.' },
+      { id: 2, dive_number: 2, dive_date: '2026-06-03', dive_time: '14:15', diving_system: 'Surface-Supplied Diving (SSD)', location: 'Wreck of the Umbria', max_depth: 28.0, bottom_time: 38, gas_mix: 'EAN32', supervisor: 'Captain Sarah', profile_image: '', notes: 'Penetrated cargo hold #2.' }
     ];
 
     async function loadDives() {
@@ -170,9 +189,13 @@
           <div class="flex justify-between items-start mb-2">
             <div>
               <span class="bg-cyan-950 text-cyan-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-cyan-800 print:bg-slate-100 print:text-slate-900 print:border-slate-300">Dive #${dive.dive_number}</span>
+              <span class="ml-2 bg-slate-700 text-slate-300 text-xs font-medium px-2 py-1 rounded-md border border-slate-600">${dive.diving_system || 'SCUBA'}</span>
               <h3 class="text-lg font-bold text-slate-100 mt-2 print:text-slate-900">${dive.location}</h3>
             </div>
-            <span class="text-xs text-slate-400 print:text-slate-600">${dive.dive_date}</span>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block print:text-slate-600">${dive.dive_date}</span>
+              ${dive.dive_time ? `<span class="text-xs text-cyan-400 font-mono">${dive.dive_time}</span>` : ''}
+            </div>
           </div>
           <div class="grid grid-cols-3 gap-2 my-3 text-sm bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 print:bg-slate-50 print:border-slate-200">
             <div><span class="text-xs text-slate-400 block print:text-slate-500">Depth</span> <strong class="text-slate-200 print:text-slate-900">${dive.max_depth} m</strong></div>
@@ -180,21 +203,47 @@
             <div><span class="text-xs text-slate-400 block print:text-slate-500">Gas</span> <strong class="text-slate-200 print:text-slate-900">${dive.gas_mix}</strong></div>
           </div>
           ${dive.supervisor ? `<p class="text-xs text-slate-400 mb-1 print:text-slate-700"><strong>Supervisor/Buddy:</strong> ${dive.supervisor}</p>` : ''}
+          ${dive.profile_image ? `
+            <div class="my-3">
+              <span class="text-xs text-slate-400 block mb-1">Immersion Profile:</span>
+              <img src="${dive.profile_image}" alt="Dive Profile" class="max-h-40 rounded border border-slate-700 object-contain bg-slate-900">
+            </div>
+          ` : ''}
           ${dive.notes ? `<p class="text-xs text-slate-300 italic bg-slate-900 p-2.5 rounded border border-slate-800 mt-2 print:bg-slate-50 print:text-slate-700 print:border-slate-200">"${dive.notes}"</p>` : ''}
         </div>
       `).join('');
     }
 
+    // Helper to convert uploaded image file to a Base64 string for local storage support
+    const getBase64 = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    };
+
     document.getElementById('dive-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      let profileImageUrl = '';
+      const imageFile = document.getElementById('profile_image').files[0];
+      if (imageFile) {
+        profileImageUrl = await getBase64(imageFile);
+      }
+
       const newDive = {
         dive_number: parseInt(document.getElementById('dive_number').value),
         dive_date: document.getElementById('dive_date').value,
+        dive_time: document.getElementById('dive_time').value,
+        diving_system: document.getElementById('diving_system').value,
         location: document.getElementById('location').value,
         max_depth: parseFloat(document.getElementById('max_depth').value),
         bottom_time: parseInt(document.getElementById('bottom_time').value),
         gas_mix: document.getElementById('gas_mix').value,
         supervisor: document.getElementById('supervisor').value,
+        profile_image: profileImageUrl,
         notes: document.getElementById('notes').value
       };
 
