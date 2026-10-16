@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Digital Dive Logbook</title>
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Tailwind CSS CDN for modern styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+      }
+      .print\:hidden {
+        display: none !important;
+      }
+      .print\:bg-white {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #000000 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-slate-700 pb-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight text-cyan-400">ProDive Logbook</h1>
+        <p class="text-slate-400 text-sm mt-1">Professional & Technical Scuba Diving Archive</p>
+      </div>
+      <div class="flex items-center gap-4 mt-4 md:mt-0">
+        <button onclick="window.print()" class="print:hidden bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/50 px-4 py-2 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Export / Print PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Summary Metrics Dashboard -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300">
+        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider print:text-slate-600">Total Dives</p>
+        <p id="stat-total-dives" class="text-3xl font-extrabold text-cyan-400 mt-2 print:text-slate-900">0</p>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300">
+        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider print:text-slate-600">Cumulative Bottom Time</p>
+        <p id="stat-total-time" class="text-3xl font-extrabold text-cyan-400 mt-2 print:text-slate-900">0 mins</p>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300">
+        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider print:text-slate-600">Max Depth Reached</p>
+        <p id="stat-max-depth" class="text-3xl font-extrabold text-cyan-400 mt-2 print:text-slate-900">0 m</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Log Form Column -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-md lg:col-span-1 print:hidden">
+        <h2 class="text-xl font-semibold mb-4 text-slate-200">Log New Dive</h2>
+        <form id="dive-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Dive Number</label>
+            <input type="number" id="dive_number" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Date</label>
+            <input type="date" id="dive_date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Location</label>
+            <input type="text" id="location" placeholder="e.g. Blue Hole, Dahab" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Max Depth (m)</label>
+              <input type="number" step="0.1" id="max_depth" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Bottom Time (min)</label>
+              <input type="number" id="bottom_time" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Gas Mix</label>
+            <input type="text" id="gas_mix" placeholder="Air / EAN32 / Trimix" value="Air" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Supervisor / Buddy</label>
+            <input type="text" id="supervisor" placeholder="Name or Sign-off" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Dive Notes</label>
+            <textarea id="notes" rows="2" placeholder="Visibility, currents, observations..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"></textarea>
+          </div>
+          <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-lg transition duration-200 shadow-lg text-sm">Save Dive Entry</button>
+        </form>
+      </div>
+
+      <!-- Log Entries Stream Column -->
+      <div class="lg:col-span-2 space-y-4 w-full">
+        <h2 class="text-xl font-semibold text-slate-200 print:text-slate-900 print:mb-4">Logged Dives History</h2>
+        <div id="dives-container" class="space-y-3">
+          <!-- Dynamic dive cards will render here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SUPABASE CONFIGURATION ---
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    
+    let supabase = null;
+    let usingCloud = false;
+    try {
+      if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        usingCloud = true;
+      }
+    } catch (e) {
+      console.warn("Supabase initialization skipped. Running in local state mode.");
+    }
+
+    let localDives = [
+      { id: 1, dive_number: 1, dive_date: '2026-06-01', location: 'Coral Gardens', max_depth: 18.5, bottom_time: 45, gas_mix: 'Air', supervisor: 'Instructor Mark', notes: 'Calm water, great visibility.' },
+      { id: 2, dive_number: 2, dive_date: '2026-06-03', location: 'Wreck of the Umbria', max_depth: 28.0, bottom_time: 38, gas_mix: 'EAN32', supervisor: 'Captain Sarah', notes: 'Penetrated cargo hold #2.' }
+    ];
+
+    async function loadDives() {
+      if (usingCloud) {
+        const { data, error } = await supabase.from('dives').select('*').order('dive_number', { ascending: true });
+        if (!error && data) {
+          renderDives(data);
+        }
+      } else {
+        renderDives(localDives);
+      }
+    }
+
+    function renderDives(dives) {
+      const container = document.getElementById('dives-container');
+      const totalDivesEl = document.getElementById('stat-total-dives');
+      const totalTimeEl = document.getElementById('stat-total-time');
+      const maxDepthEl = document.getElementById('stat-max-depth');
+
+      if (!dives || dives.length === 0) {
+        container.innerHTML = `<div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-slate-400 text-sm text-center print:bg-white print:text-slate-600">No dives recorded yet.</div>`;
+        totalDivesEl.innerText = '0';
+        totalTimeEl.innerText = '0 mins';
+        maxDepthEl.innerText = '0 m';
+        return;
+      }
+
+      totalDivesEl.innerText = dives.length;
+      const totalMins = dives.reduce((acc, d) => acc + Number(d.bottom_time), 0);
+      totalTimeEl.innerText = `${totalMins} mins`;
+      const deepest = Math.max(...dives.map(d => Number(d.max_depth)));
+      maxDepthEl.innerText = `${deepest} m`;
+
+      container.innerHTML = dives.map(dive => `
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300 print:shadow-none print:mb-4">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="bg-cyan-950 text-cyan-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-cyan-800 print:bg-slate-100 print:text-slate-900 print:border-slate-300">Dive #${dive.dive_number}</span>
+              <h3 class="text-lg font-bold text-slate-100 mt-2 print:text-slate-900">${dive.location}</h3>
+            </div>
+            <span class="text-xs text-slate-400 print:text-slate-600">${dive.dive_date}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 my-3 text-sm bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 print:bg-slate-50 print:border-slate-200">
+            <div><span class="text-xs text-slate-400 block print:text-slate-500">Depth</span> <strong class="text-slate-200 print:text-slate-900">${dive.max_depth} m</strong></div>
+            <div><span class="text-xs text-slate-400 block print:text-slate-500">Time</span> <strong class="text-slate-200 print:text-slate-900">${dive.bottom_time} min</strong></div>
+            <div><span class="text-xs text-slate-400 block print:text-slate-500">Gas</span> <strong class="text-slate-200 print:text-slate-900">${dive.gas_mix}</strong></div>
+          </div>
+          ${dive.supervisor ? `<p class="text-xs text-slate-400 mb-1 print:text-slate-700"><strong>Supervisor/Buddy:</strong> ${dive.supervisor}</p>` : ''}
+          ${dive.notes ? `<p class="text-xs text-slate-300 italic bg-slate-900 p-2.5 rounded border border-slate-800 mt-2 print:bg-slate-50 print:text-slate-700 print:border-slate-200">"${dive.notes}"</p>` : ''}
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('dive-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newDive = {
+        dive_number: parseInt(document.getElementById('dive_number').value),
+        dive_date: document.getElementById('dive_date').value,
+        location: document.getElementById('location').value,
+        max_depth: parseFloat(document.getElementById('max_depth').value),
+        bottom_time: parseInt(document.getElementById('bottom_time').value),
+        gas_mix: document.getElementById('gas_mix').value,
+        supervisor: document.getElementById('supervisor').value,
+        notes: document.getElementById('notes').value
+      };
+
+      if (usingCloud) {
+        const { error } = await supabase.from('dives').insert([newDive]);
+        if (error) {
+          alert('Error saving dive to database: ' + error.message);
+          return;
+        }
+        loadDives();
+      } else {
+        localDives.push({ id: localDives.length + 1, ...newDive });
+        renderDives(localDives);
+      }
+
+      document.getElementById('dive-form').reset();
+      document.getElementById('gas_mix').value = 'Air';
+    });
+
+    loadDives();
+  </script>
+</body>
+</html>
