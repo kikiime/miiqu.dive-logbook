@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Digital Dive Logbook</title>
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Tailwind CSS CDN for modern styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+      }
+      .print\:hidden {
+        display: none !important;
+      }
+      .print\:bg-white {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #000000 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-slate-700 pb-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight text-cyan-400">ProDive Logbook</h1>
+        <p class="text-slate-400 text-sm mt-1">Professional & Technical Diving Archive</p>
+      </div>
+      <div class="flex items-center gap-4 mt-4 md:mt-0">
+        <button onclick="window.print()" class="print:hidden bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/50 px-4 py-2 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Export / Print PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Summary Metrics Dashboard -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300">
+        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider print:text-slate-600">Total Dives</p>
+        <p id="stat-total-dives" class="text-3xl font-extrabold text-cyan-400 mt-2 print:text-slate-900">0</p>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300">
+        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider print:text-slate-600">Cumulative Bottom Time</p>
+        <p id="stat-total-time" class="text-3xl font-extrabold text-cyan-400 mt-2 print:text-slate-900">0 mins</p>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300">
+        <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider print:text-slate-600">Max Depth Reached</p>
+        <p id="stat-max-depth" class="text-3xl font-extrabold text-cyan-400 mt-2 print:text-slate-900">0 m</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Log Form Column -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-md lg:col-span-1 print:hidden">
+        <h2 class="text-xl font-semibold mb-4 text-slate-200">Log New Dive</h2>
+        <form id="dive-form" class="space-y-4">
+          
+          <!-- General Details -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Dive Number</label>
+            <input type="number" id="dive_number" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Date</label>
+              <input type="date" id="dive_date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Hour / Time</label>
+              <input type="time" id="dive_time" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Diving System</label>
+            <select id="diving_system" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              <option value="SCUBA">SCUBA (Self-Contained Underwater Breathing Apparatus)</option>
+              <option value="Surface-Supplied Diving (SSD)">Surface-Supplied Diving (SSD)</option>
+              <option value="Open bell">Open bell</option>
+              <option value="Closed bell">Closed bell</option>
+            </select>
+          </div>
+
+          <!-- Location & Coordinates -->
+          <div class="border-t border-slate-700 pt-3">
+            <label class="block text-xs font-medium text-cyan-400 mb-1">Location Details</label>
+            <div class="space-y-2">
+              <input type="text" id="location_name" placeholder="Place Name (e.g. Blue Hole, Dahab)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              <input type="text" id="location_coords" placeholder="Coordinates (e.g. 28.57° N, 34.52° E)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Environment: Water Temp & Sea Conditions -->
+          <div class="border-t border-slate-700 pt-3">
+            <label class="block text-xs font-medium text-cyan-400 mb-1">Environmental Conditions</label>
+            <div class="mb-2">
+              <label class="block text-xs font-medium text-slate-300 mb-1">Water Temperature (°C)</label>
+              <input type="number" step="0.1" id="water_temp" placeholder="e.g. 22.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Sea Conditions (Select all that apply)</label>
+              <div class="grid grid-cols-2 gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-700 text-xs">
+                <label class="flex items-center gap-2"><input type="checkbox" name="sea_cond" value="Currents" class="rounded bg-slate-800 border-slate-700 text-cyan-500"> Currents</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="sea_cond" value="Low Visibility" class="rounded bg-slate-800 border-slate-700 text-cyan-500"> Low Visibility</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="sea_cond" value="Swell/Waves" class="rounded bg-slate-800 border-slate-700 text-cyan-500"> Swell / Waves</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="sea_cond" value="Surge" class="rounded bg-slate-800 border-slate-700 text-cyan-500"> Surge</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="sea_cond" value="Thermocline" class="rounded bg-slate-800 border-slate-700 text-cyan-500"> Thermocline</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="sea_cond" value="Calm" class="rounded bg-slate-800 border-slate-700 text-cyan-500"> Calm</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Depths & Times -->
+          <div class="border-t border-slate-700 pt-3 grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Max Depth (m)</label>
+              <input type="number" step="0.1" id="max_depth" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Bottom Time (min)</label>
+              <input type="number" id="bottom_time" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Gas Mix</label>
+            <input type="text" id="gas_mix" placeholder="Air / EAN32 / Trimix" value="Air" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+          </div>
+
+          <!-- Underwater Work & Tools -->
+          <div class="border-t border-slate-700 pt-3">
+            <label class="block text-xs font-medium text-cyan-400 mb-1">Professional Operations</label>
+            <div class="space-y-2">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Underwater Work Performed</label>
+                <select id="work_type" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                  <option value="None / Exploration">None / Exploration / Survey</option>
+                  <option value="Inspection">Inspection (NDT / Video)</option>
+                  <option value="Cleaning">Cleaning / Scrubbing</option>
+                  <option value="Soldering/Welding">Soldering / Underwater Welding</option>
+                  <option value="Salvage">Salvage / Rigging</option>
+                  <option value="Construction">Construction / Maintenance</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Tools / Work Equipment Used</label>
+                <input type="text" id="work_tools" placeholder="e.g. Hydraulic brush, NDT Ultrasonic meter, Torch" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <!-- Deco Charts & Stops -->
+          <div class="border-t border-slate-700 pt-3">
+            <label class="block text-xs font-medium text-cyan-400 mb-1">Decompression & Stops</label>
+            <div class="space-y-2">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">DECO Table / Chart Tabulation</label>
+                <input type="text" id="deco_chart" placeholder="e.g. US Navy Table / Buhlmann ZHL-16C" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Safety Stops (Depth & Time)</label>
+                <input type="text" id="safety_stops" placeholder="e.g. 5m for 3 mins" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Decompression Stops (Multiples: Depth / Time)</label>
+                <input type="text" id="deco_stops" placeholder="e.g. 12m: 2m, 9m: 5m, 6m: 10m" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <!-- Buddy & Supervisor Sections -->
+          <div class="border-t border-slate-700 pt-3 space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Dive Buddy Name</label>
+              <input type="text" id="dive_buddy" placeholder="Name of Dive Buddy" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Supervisor Name</label>
+              <input type="text" id="supervisor_name" placeholder="Name of Diving Supervisor" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="block text-xs font-medium text-slate-300">Supervisor Signature</label>
+                <button type="button" onclick="clearSignature()" class="text-xs text-cyan-400 hover:underline">Clear Canvas</button>
+              </div>
+              <div class="border border-slate-700 rounded-lg bg-slate-900 overflow-hidden">
+                <canvas id="sig-canvas" width="400" height="120" class="w-full cursor-crosshair touch-none"></canvas>
+              </div>
+              <input type="hidden" id="supervisor_signature">
+            </div>
+          </div>
+
+          <!-- Immersion Profile Image -->
+          <div class="border-t border-slate-700 pt-3">
+            <label class="block text-xs font-medium text-slate-300 mb-1">Immersion Profile (Image)</label>
+            <input type="file" id="profile_image" accept="image/*" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-cyan-950 file:text-cyan-400 hover:file:bg-cyan-900">
+          </div>
+
+          <!-- Dive Notes & Incidents -->
+          <div class="border-t border-slate-700 pt-3 space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Dive Notes</label>
+              <textarea id="notes" rows="2" placeholder="General observations..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-rose-400 mb-1">Incidents / Issues Log</label>
+              <textarea id="incidents" rows="2" placeholder="Equipment malfunctions, medical issues, near-misses..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"></textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-lg transition duration-200 shadow-lg text-sm">Save Dive Entry</button>
+        </form>
+      </div>
+
+      <!-- Log Entries Stream Column -->
+      <div class="lg:col-span-2 space-y-4 w-full">
+        <h2 class="text-xl font-semibold text-slate-200 print:text-slate-900 print:mb-4">Logged Dives History</h2>
+        <div id="dives-container" class="space-y-3">
+          <!-- Dynamic dive cards will render here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SUPABASE CONFIGURATION ---
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    
+    let supabase = null;
+    let usingCloud = false;
+    try {
+      if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        usingCloud = true;
+      }
+    } catch (e) {
+      console.warn("Supabase initialization skipped. Running in local state mode.");
+    }
+
+    let localDives = [
+      { 
+        id: 1, 
+        dive_number: 1, 
+        dive_date: '2026-06-01', 
+        dive_time: '10:30', 
+        diving_system: 'SCUBA', 
+        location_name: 'Coral Gardens', 
+        location_coords: '27.5° N, 34.2° E',
+        water_temp: 24.0,
+        sea_conditions: ['Currents', 'Calm'],
+        max_depth: 18.5, 
+        bottom_time: 45, 
+        gas_mix: 'Air', 
+        work_type: 'Inspection',
+        work_tools: 'NDT Ultrasonic Meter',
+        deco_chart: 'Buhlmann ZHL-16C',
+        safety_stops: '5m for 3 mins',
+        deco_stops: 'None',
+        dive_buddy: 'John Doe',
+        supervisor_name: 'Instructor Mark',
+        supervisor_signature: '',
+        profile_image: '', 
+        notes: 'Calm water, great visibility.',
+        incidents: ''
+      }
+    ];
+
+    // --- SIGNATURE CANVAS SETUP ---
+    const canvas = document.getElementById('sig-canvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function getCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    canvas.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); const pos = getCoords(e); ctx.moveTo(pos.x, pos.y); });
+    canvas.addEventListener('mousemove', (e) => { if (!drawing) return; const pos = getCoords(e); ctx.lineTo(pos.x, pos.y); ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke(); });
+    canvas.addEventListener('mouseup', () => { drawing = false; });
+    canvas.addEventListener('mouseleave', () => { drawing = false; });
+
+    canvas.addEventListener('touchstart', (e) => { drawing = true; ctx.beginPath(); const pos = getCoords(e); ctx.moveTo(pos.x, pos.y); e.preventDefault(); });
+    canvas.addEventListener('touchmove', (e) => { if (!drawing) return; const pos = getCoords(e); ctx.lineTo(pos.x, pos.y); ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke(); e.preventDefault(); });
+    canvas.addEventListener('touchend', () => { drawing = false; });
+
+    function clearSignature() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    async function loadDives() {
+      if (usingCloud) {
+        const { data, error } = await supabase.from('dives').select('*').order('dive_number', { ascending: true });
+        if (!error && data) {
+          renderDives(data);
+        }
+      } else {
+        renderDives(localDives);
+      }
+    }
+
+    function renderDives(dives) {
+      const container = document.getElementById('dives-container');
+      const totalDivesEl = document.getElementById('stat-total-dives');
+      const totalTimeEl = document.getElementById('stat-total-time');
+      const maxDepthEl = document.getElementById('stat-max-depth');
+
+      if (!dives || dives.length === 0) {
+        container.innerHTML = `<div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-slate-400 text-sm text-center print:bg-white print:text-slate-600">No dives recorded yet.</div>`;
+        totalDivesEl.innerText = '0';
+        totalTimeEl.innerText = '0 mins';
+        maxDepthEl.innerText = '0 m';
+        return;
+      }
+
+      totalDivesEl.innerText = dives.length;
+      const totalMins = dives.reduce((acc, d) => acc + Number(d.bottom_time), 0);
+      totalTimeEl.innerText = `${totalMins} mins`;
+      const deepest = Math.max(...dives.map(d => Number(d.max_depth)));
+      maxDepthEl.innerText = `${deepest} m`;
+
+      container.innerHTML = dives.map(dive => `
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-sm print:bg-white print:border-slate-300 print:shadow-none print:mb-4">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="bg-cyan-950 text-cyan-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-cyan-800 print:bg-slate-100 print:text-slate-900 print:border-slate-300">Dive #${dive.dive_number}</span>
+              <span class="ml-2 bg-slate-700 text-slate-300 text-xs font-medium px-2 py-1 rounded-md border border-slate-600">${dive.diving_system || 'SCUBA'}</span>
+              <h3 class="text-lg font-bold text-slate-100 mt-2 print:text-slate-900">${dive.location_name || dive.location || 'Unknown Location'}</h3>
+              ${dive.location_coords ? `<p class="text-xs text-slate-400 font-mono">Coords: ${dive.location_coords}</p>` : ''}
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block print:text-slate-600">${dive.dive_date}</span>
+              ${dive.dive_time ? `<span class="text-xs text-cyan-400 font-mono">${dive.dive_time}</span>` : ''}
+            </div>
+          </div>
+
+          <!-- Environmental Stats -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 my-3 text-xs bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 print:bg-slate-50 print:border-slate-200">
+            <div><span class="text-slate-400 block print:text-slate-500">Depth</span> <strong class="text-slate-200 print:text-slate-900">${dive.max_depth} m</strong></div>
+            <div><span class="text-slate-400 block print:text-slate-500">Time</span> <strong class="text-slate-200 print:text-slate-900">${dive.bottom_time} min</strong></div>
+            <div><span class="text-slate-400 block print:text-slate-500">Gas Mix</span> <strong class="text-slate-200 print:text-slate-900">${dive.gas_mix}</strong></div>
+            <div><span class="text-slate-400 block print:text-slate-500">Water Temp</span> <strong class="text-slate-200 print:text-slate-900">${dive.water_temp ? dive.water_temp + ' °C' : 'N/A'}</strong></div>
+          </div>
+
+          ${dive.sea_conditions && dive.sea_conditions.length > 0 ? `
+            <div class="text-xs text-slate-300 mb-2">
+              <strong class="text-slate-400">Sea Conditions:</strong> ${Array.isArray(dive.sea_conditions) ? dive.sea_conditions.join(', ') : dive.sea_conditions}
+            </div>
+          ` : ''}
+
+          <!-- Professional Work & Tools -->
+          ${dive.work_type && dive.work_type !== 'None / Exploration' ? `
+            <div class="bg-slate-900/80 p-2.5 rounded border border-slate-700/50 my-2 text-xs">
+              <div><strong class="text-cyan-400">Work Performed:</strong> ${dive.work_type}</div>${dive.work_tools ? `<div><strong class="text-slate-400">Equipment/Tools:</strong> ${dive.work_tools}</div>` : ''}
+            </div>
+          ` : ''}
+
+          <!-- Deco & Stops -->
+          <div class="text-xs text-slate-300 space-y-1 my-2 bg-slate-900/40 p-2.5 rounded border border-slate-800">
+            <div><strong class="text-slate-400">DECO Table/Chart:</strong> ${dive.deco_chart || 'Standard'}</div>
+            <div><strong class="text-slate-400">Safety Stops:</strong> ${dive.safety_stops || 'None'}</div>
+            <div><strong class="text-slate-400">Decompression Stops:</strong> ${dive.deco_stops || 'None'}</div>
+          </div>
+
+          <!-- Buddy & Supervisor -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300 my-2 pt-2 border-t border-slate-700/40">
+            <div><strong class="text-slate-400">Dive Buddy:</strong> ${dive.dive_buddy || 'None recorded'}</div>
+            <div>
+              <strong class="text-slate-400">Supervisor:</strong> ${dive.supervisor_name || dive.supervisor || 'N/A'}
+              ${dive.supervisor_signature ? `<div class="mt-1"><span class="text-[10px] text-slate-500 block">Sign-off:</span><img src="${dive.supervisor_signature}" alt="Signature" class="h-8 bg-slate-900 border border-slate-700 rounded p-0.5 inline-block"></div>` : ''}
+            </div>
+          </div>
+
+          ${dive.profile_image ? `
+            <div class="my-3">
+              <span class="text-xs text-slate-400 block mb-1">Immersion Profile:</span>
+              <img src="${dive.profile_image}" alt="Dive Profile" class="max-h-40 rounded border border-slate-700 object-contain bg-slate-900">
+            </div>
+          ` : ''}
+
+          ${dive.notes ? `<p class="text-xs text-slate-300 italic bg-slate-900 p-2.5 rounded border border-slate-800 mt-2 print:bg-slate-50 print:text-slate-700 print:border-slate-200"><strong>Notes:</strong> "${dive.notes}"</p>` : ''}
+          ${dive.incidents ? `<p class="text-xs text-rose-300 bg-rose-950/30 p-2.5 rounded border border-rose-900/50 mt-2"><strong>Incidents / Issues:</strong> "${dive.incidents}"</p>` : ''}
+        </div>
+      `).join('');
+    }
+
+    const getBase64 = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    };
+
+    document.getElementById('dive-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      let profileImageUrl = '';
+      const imageFile = document.getElementById('profile_image').files[0];
+      if (imageFile) {
+        profileImageUrl = await getBase64(imageFile);
+      }
+
+      // Capture checked sea conditions
+      const selectedSeaConds = Array.from(document.querySelectorAll('input[name="sea_cond"]:checked')).map(cb => cb.value);
+
+      // Check if signature canvas is blank or has content
+      const sigData = canvas.toDataURL();
+      // Simple blank check: blank canvas is typically transparent/empty
+      const blank = document.createElement('canvas');
+      blank.width = canvas.width;
+      blank.height = canvas.height;
+      const supervisorSig = sigData === blank.toDataURL() ? '' : sigData;
+
+      const newDive = {
+        dive_number: parseInt(document.getElementById('dive_number').value),
+        dive_date: document.getElementById('dive_date').value,
+        dive_time: document.getElementById('dive_time').value,
+        diving_system: document.getElementById('diving_system').value,
+        location_name: document.getElementById('location_name').value,
+        location_coords: document.getElementById('location_coords').value,
+        water_temp: document.getElementById('water_temp').value ? parseFloat(document.getElementById('water_temp').value) : null,
+        sea_conditions: selectedSeaConds,
+        max_depth: parseFloat(document.getElementById('max_depth').value),
+        bottom_time: parseInt(document.getElementById('bottom_time').value),
+        gas_mix: document.getElementById('gas_mix').value,
+        work_type: document.getElementById('work_type').value,
+        work_tools: document.getElementById('work_tools').value,
+        deco_chart: document.getElementById('deco_chart').value,
+        safety_stops: document.getElementById('safety_stops').value,
+        deco_stops: document.getElementById('deco_stops').value,
+        dive_buddy: document.getElementById('dive_buddy').value,
+        supervisor_name: document.getElementById('supervisor_name').value,
+        supervisor_signature: supervisorSig,
+        profile_image: profileImageUrl,
+        notes: document.getElementById('notes').value,
+        incidents: document.getElementById('incidents').value
+      };
+
+      if (usingCloud) {
+        const { error } = await supabase.from('dives').insert([newDive]);
+        if (error) {
+          alert('Error saving dive to database: ' + error.message);
+          return;
+        }
+        loadDives();
+      } else {
+        localDives.push({ id: localDives.length + 1, ...newDive });
+        renderDives(localDives);
+      }
+
+      document.getElementById('dive-form').reset();
+      document.getElementById('gas_mix').value = 'Air';
+      clearSignature();
+      // Uncheck checkboxes
+      document.querySelectorAll('input[name="sea_cond"]').forEach(cb => cb.checked = false);
+    });
+
+    loadDives();
+  </script>
+</body>
+</html>
